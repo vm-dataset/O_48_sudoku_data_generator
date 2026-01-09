@@ -43,8 +43,13 @@ class TaskConfig(GenerationConfig):
     )
     
     video_fps: int = Field(
-        default=10,
+        default=15,
         description="Video frame rate"
+    )
+    
+    target_video_duration: float = Field(
+        default=10.0,
+        description="Target video duration in seconds"
     )
     
     # ══════════════════════════════════════════════════════════════════════════

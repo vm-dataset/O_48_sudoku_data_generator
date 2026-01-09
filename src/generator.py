@@ -294,20 +294,16 @@ class TaskGenerator(BaseGenerator):
         self,
         puzzle: List[List[int]],
         solution: List[List[int]],
-        hold_frames: int = 10,
-        step_frames: int = 3
+        hold_frames: int = 4,
+        step_frames: Optional[int] = None
     ) -> List[Image.Image]:
         """
         Create animation frames showing the solving process.
         
         Shows numbers being filled in step by step.
+        Dynamically adjusts frame count to match target video duration.
         """
         frames = []
-        
-        # Hold initial puzzle
-        initial_frame = self._render_sudoku(puzzle)
-        for _ in range(hold_frames):
-            frames.append(initial_frame)
         
         # Get list of cells to fill (empty cells in puzzle)
         cells_to_fill = []
@@ -315,6 +311,30 @@ class TaskGenerator(BaseGenerator):
             for j in range(9):
                 if puzzle[i][j] == 0:
                     cells_to_fill.append((i, j))
+        
+        num_cells = len(cells_to_fill)
+        
+        # Calculate target total frames for desired duration
+        target_frames = int(self.config.target_video_duration * self.config.video_fps)
+        
+        # Calculate step_frames dynamically if not provided
+        # Reserve frames for initial and final holds
+        reserved_frames = hold_frames * 2  # initial + final
+        available_frames = max(1, target_frames - reserved_frames)
+        
+        if step_frames is None:
+            # Distribute available frames across cells
+            if num_cells > 0:
+                # Calculate frames per cell to match target duration
+                # Use regular division and round to nearest integer
+                step_frames = max(1, round(available_frames / num_cells))
+            else:
+                step_frames = 1
+        
+        # Hold initial puzzle
+        initial_frame = self._render_sudoku(puzzle)
+        for _ in range(hold_frames):
+            frames.append(initial_frame)
         
         # Randomize order for visual variety
         random.shuffle(cells_to_fill)
@@ -329,7 +349,7 @@ class TaskGenerator(BaseGenerator):
             # Render frame with this cell highlighted
             frame = self._render_sudoku(current_state, highlight_cells=[(row, col)])
             
-            # Add multiple frames for this step
+            # Add frames for this step
             for _ in range(step_frames):
                 frames.append(frame)
         
